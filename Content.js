@@ -5,7 +5,8 @@ module.exports = {
     search,
     getContentDetails,
     getContentData,
-    editContentData
+    editContentData,
+    deleteContentData
 } 
 
 
@@ -313,12 +314,35 @@ async function editContentData(req, res, pool) {
             result = await conn.execute(`
                 update TV_Shows
                 set episodes = :episodes, seasons = :seasons
-                where id = :id`), [data.tvshow.episodes, data.tvshow.seasons, data.content_id]
+                where id = :id`, [data.tvshow.episodes, data.tvshow.seasons, data.content_id]
+            )
+            console.log(result);
         }
 
         res.status(200).json('edited successfully');
     } catch (err) {
         res.status(400).json('error editing content data');
+        console.log(err);
+    } finally {
+    if (conn) { // conn assignment worked, need to close
+        await conn.close()
+    }
+    }
+}
+
+async function deleteContentData(req, res, pool) {
+    
+    let conn;
+    try {
+        conn = await pool.getConnection(); 
+        let result = await conn.execute(
+            `delete from content where id = :id`, [req.body.id]
+        )
+        
+       
+        res.status(200).json('deleted successfully');
+    } catch (err) {
+        res.status(400).json('error deleting content data');
         console.log(err);
     } finally {
     if (conn) { // conn assignment worked, need to close

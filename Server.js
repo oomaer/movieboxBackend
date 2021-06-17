@@ -76,7 +76,7 @@ async function init() {
     app.post('/removeTVDetail', (req, res) => Element.removeTVDetail(req, res, pool));
     app.post('/getContentData', (req, res) => Content.getContentData(req, res, pool));
     app.post('/editContentData', (req, res) => Content.editContentData(req, res, pool));
-    
+    app.post('/deleteContentData', (req, res) => Content.deleteContentData(req, res, pool));
     
   const httpPort = 4000;
     app.listen(httpPort);
