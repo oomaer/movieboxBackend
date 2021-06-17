@@ -211,9 +211,9 @@ async function getContentDetails(req, res, pool) {
         content_data.cast = result.rows;
 
         result = await conn.execute(
-            `select id, name
-            from credits, crew_members
-            where crew_members_id = crew_members.id and content_id = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            `select crew_members_name as NAME, crew_members_role as ROLE
+            from credits      
+            where content_id = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
         )
         
         content_data.crew = result.rows;
@@ -338,9 +338,8 @@ async function deleteContentData(req, res, pool) {
         let result = await conn.execute(
             `delete from content where id = :id`, [req.body.id]
         )
-        
-       
         res.status(200).json('deleted successfully');
+
     } catch (err) {
         res.status(400).json('error deleting content data');
         console.log(err);

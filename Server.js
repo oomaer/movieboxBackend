@@ -67,8 +67,8 @@ async function init() {
     app.get('/getrecommended', (req, res) => Content.getRecommended(req, res, pool));
     app.post('/addContent', (req, res) => Content.addContent(req, res, pool));
     app.post('/search', (req, res) => Content.search(req, res, pool));
-    app.post('/addPerson', (req, res) => Person.addPerson(req, res, pool));
-    app.post('/removePerson', (req, res) => Person.removePerson(req, res, pool));
+    app.post('/addPersonLink', (req, res) => Person.addPersonLink(req, res, pool));
+    app.post('/removePersonLink', (req, res) => Person.removePersonLink(req, res, pool));
     app.post('/addElement', (req, res) => Element.addElement(req, res, pool));
     app.post('/removeElement', (req, res) => Element.removeElement(req, res, pool));
     app.post('/getContentDetails', (req, res) => Content.getContentDetails(req, res, pool));
@@ -77,6 +77,9 @@ async function init() {
     app.post('/getContentData', (req, res) => Content.getContentData(req, res, pool));
     app.post('/editContentData', (req, res) => Content.editContentData(req, res, pool));
     app.post('/deleteContentData', (req, res) => Content.deleteContentData(req, res, pool));
+    app.post('/addPerson', (req, res) => Person.addPerson(req, res, pool));
+    app.post('/removePerson', (req, res) => Person.removePerson(req, res, pool));
+    app.post('/editPerson', (req, res) => Person.editPerson(req, res, pool));
     
   const httpPort = 4000;
     app.listen(httpPort);
