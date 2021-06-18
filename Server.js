@@ -77,9 +77,12 @@ async function init() {
     app.post('/getContentData', (req, res) => Content.getContentData(req, res, pool));
     app.post('/editContentData', (req, res) => Content.editContentData(req, res, pool));
     app.post('/deleteContentData', (req, res) => Content.deleteContentData(req, res, pool));
-    app.post('/addPerson', (req, res) => Person.addPerson(req, res, pool));
-    app.post('/removePerson', (req, res) => Person.removePerson(req, res, pool));
-    app.post('/editPerson', (req, res) => Person.editPerson(req, res, pool));
+    app.post('/addCelebrity', (req, res) => Person.addCelebrity(req, res, pool));
+    app.post('/removeCelebrity', (req, res) => Person.removeCelebrity(req, res, pool));
+    app.post('/editCelebrity', (req, res) => Person.editCelebrity(req, res, pool));
+    app.post('/getCelebrity', (req, res) => Person.getCelebrity(req, res, pool));
+    app.post('/addCelebrityPicture', (req, res) => Person.addCelebrityPicture(req, res, pool));
+    app.post('/removeCelebrityPicture', (req, res) => Person.removeCelebrityPicture(req, res, pool));
     
   const httpPort = 4000;
     app.listen(httpPort);
