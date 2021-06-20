@@ -32,8 +32,7 @@ async function getRecommended(req, res, pool) {
             for(let j = 0; j < genres.rows.length; j++){
                 genre_arr.push(genres.rows[j][0] + " ");
             }
-            
-            
+           
             result.rows[i].push(genre_arr);
             
         }
@@ -125,7 +124,7 @@ async function search(req, res, pool) {
             `SELECT *
             from  content
             WHERE lower(title) LIKE :match
-            and ROWNUM <= 5`, [data.match+'%']
+            and ROWNUM <= 5`, [data.match.toLowerCase()+'%']
             , { outFormat: oracledb.OUT_FORMAT_OBJECT }
             )
         }
@@ -135,7 +134,7 @@ async function search(req, res, pool) {
                 `SELECT id, name
                 from  crew_members
                 WHERE lower(name) LIKE :match
-                and ROWNUM <= 5`, [data.match+'%']
+                and ROWNUM <= 5`, [data.match.toLowerCase()+'%']
                 , { outFormat: oracledb.OUT_FORMAT_OBJECT }
                 )            
         }

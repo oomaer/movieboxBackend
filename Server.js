@@ -87,6 +87,12 @@ async function init() {
     app.post('/removeCelebrityPicture', (req, res) => Person.removeCelebrityPicture(req, res, pool));
     app.post('/addAwardEvent', (req, res) => AwardNews.addAwardEvent(req, res, pool));
     app.post('/addNews', (req, res) => AwardNews.addNews(req, res, pool));
+    app.post('/editAwardEvent', (req, res) => AwardNews.editAwardEvent(req, res, pool));
+    app.post('/editNews', (req, res) => AwardNews.editNews(req, res, pool));
+    app.post('/deleteAwardEvent', (req, res) => AwardNews.deleteAwardEvent(req, res, pool));
+    app.post('/deleteNews', (req, res) => AwardNews.deleteNews(req, res, pool));
+    app.post('/getAwardEvent', (req, res) => AwardNews.getAwardEvent(req, res, pool));
+    app.post('/getNews', (req, res) => AwardNews.getNews(req, res, pool));
     
   const httpPort = 4000;
     app.listen(httpPort);
