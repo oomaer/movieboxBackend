@@ -9,6 +9,7 @@ const User = require('./User.js');
 const Content = require('./Content.js');
 const Person = require('./Person.js');
 const Element = require('./Element.js');
+const AwardNews = require('./AwardNews');
 
 const config = {
   user: 'testmovie',
@@ -83,6 +84,9 @@ async function init() {
     app.post('/getCelebrity', (req, res) => Person.getCelebrity(req, res, pool));
     app.post('/addCelebrityPicture', (req, res) => Person.addCelebrityPicture(req, res, pool));
     app.post('/removeCelebrityPicture', (req, res) => Person.removeCelebrityPicture(req, res, pool));
+    app.post('/removeCelebrityPicture', (req, res) => Person.removeCelebrityPicture(req, res, pool));
+    app.post('/addAwardEvent', (req, res) => AwardNews.addAwardEvent(req, res, pool));
+    app.post('/addNews', (req, res) => AwardNews.addNews(req, res, pool));
     
   const httpPort = 4000;
     app.listen(httpPort);

@@ -119,13 +119,13 @@ async function search(req, res, pool) {
     let conn;
     const data = req.body;
     try {
-        conn = await pool.getConnection();
-        let result; 
-        if(data.from  === 'Cast Members'){
+        conn = await pool.getConnection(); 
+        if(data.from  === 'AwardsNews'){
             result = await conn.execute(
-            `SELECT id, name
-            from  celebrities
-            WHERE lower(name) LIKE :match`, [data.match+'%']
+            `SELECT *
+            from  content
+            WHERE lower(title) LIKE :match
+            and ROWNUM <= 5`, [data.match+'%']
             , { outFormat: oracledb.OUT_FORMAT_OBJECT }
             )
         }
@@ -134,7 +134,8 @@ async function search(req, res, pool) {
             result = await conn.execute(
                 `SELECT id, name
                 from  crew_members
-                WHERE lower(name) LIKE :match`, [data.match+'%']
+                WHERE lower(name) LIKE :match
+                and ROWNUM <= 5`, [data.match+'%']
                 , { outFormat: oracledb.OUT_FORMAT_OBJECT }
                 )            
         }
@@ -142,6 +143,7 @@ async function search(req, res, pool) {
         res.status(200).json(result.rows); 
 
     } catch (err) {
+        res.status(400).json("Error Searching");
     console.log('Ouch!', err)
     } finally {
     if (conn) { // conn assignment worked, need to close
