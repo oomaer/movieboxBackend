@@ -66,16 +66,16 @@ async function addContent(req, res, pool) {
         }
 
         result = await conn.execute(
-            `insert into content values (:id, :title, :releasedate, :runtime, :tagline, :voteavg, :votecount, :popularity, :image, :cover, :type)`,
-            [id, data.title, data.releaseDate, data.runtime, data.tagline, data.voteAvg, data.voteCount, data.popularity, data.image, data.cover, data.type]
+            `insert into content values (:id, :title, :releasedate, :runtime, :tagline, :voteavg, :votecount, :popularity, :image, :cover, :type ,:overview)`,
+            [id, data.title, data.releaseDate, data.runtime, data.tagline, data.voteAvg, data.voteCount, data.popularity, data.image, data.cover, data.type, data.overview]
         );
         
 
 
         if(data.type === 'movie'){    
             result = await conn.execute(
-                `insert into movies values (:id, :movieid, :overview)`,
-                [id, id, data.movie.overview]
+                `insert into movies values (:id, :movieid)`,
+                [id, id]
             )
 
             let boxoffice_id;
@@ -106,6 +106,7 @@ async function addContent(req, res, pool) {
       
     } catch (err) {
     console.log('Ouch!', err)
+        res.status(400).json("error adding content");
     } finally {
     if (conn) { // conn assignment worked, need to close
         await conn.close()
@@ -212,9 +213,9 @@ async function getContentDetails(req, res, pool) {
         content_data.cast = result.rows;
 
         result = await conn.execute(
-            `select crew_members_name as NAME, crew_members_role as ROLE
-            from credits      
-            where content_id = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            `select name, role
+            from credits, crew_members      
+            where crew_members_id = id and content_id = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
         )
         
         content_data.crew = result.rows;
@@ -231,43 +232,45 @@ async function getContentDetails(req, res, pool) {
 }
 
 async function getContentData(req, res, pool) {
-    
     let conn;
+  
     try {
         conn = await pool.getConnection();
         let result; 
         result = await conn.execute(
             `select * from content where id = :id`, [req.body.id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
         )    
-        result = result.rows[0];
-        if(result.TYPE === 'movie'){
-            let moviedata = await conn.execute(
-                `select overview from movies where id = :id`, [req.body.id]
-            )
-            let movie = {OVERVIEW: moviedata.rows[0][0]}
-            let boxoffice_data = await conn.execute(
-                `select budget, revenue from box_office where Movies_movieid = :id`, [req.body.id]
-            )
-            if(boxoffice_data.rows.length !== 0){
-                movie.BUDGET = boxoffice_data.rows[0][0];
-                movie.REVENUE = boxoffice_data.rows[0][1];            
+    
+        if (result.rows.length !== 0){
+            result = result.rows[0];
+            if(result.TYPE === 'movie'){
+                let movie = {}
+                let boxoffice_data = await conn.execute(
+                    `select budget, revenue from box_office where Movies_movieid = :id`, [req.body.id]
+                )
+                if(boxoffice_data.rows.length !== 0){
+                    movie.BUDGET = boxoffice_data.rows[0][0];
+                    movie.REVENUE = boxoffice_data.rows[0][1];            
+                }
+                else{
+                    movie.BUDGET = '';
+                    movie.REVENUE = '';
+                }
+                result.movie = movie;
             }
             else{
-                movie.BUDGET = '';
-                movie.REVENUE = '';
+                let tvdata = await conn.execute(
+                    `select episodes, seasons from tv_shows where id = :id`, [req.body.id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+                let tvshow = tvdata.rows[0];
+                result.tv_show = tvshow;
             }
 
-            result.movie = movie;
+            res.status(200).json(result); 
         }
-        else{
-            let tvdata = await conn.execute(
-                `select episodes, seasons from tv_shows where id = :id`, [req.body.id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
-            )
-            let tvshow = tvdata.rows[0];
-            result.tv_show = tvshow;
+        else {
+            res.status(404).json('Content not found');
         }
-
-        res.status(200).json(result); 
 
     } catch (err) {
         console.log(err.message);
@@ -275,7 +278,7 @@ async function getContentData(req, res, pool) {
             res.status(404).json('not found');
             
         }
-        res.status(400).json('error editing content data');
+        res.status(400).json('error getting content data');
 
     } finally {
     if (conn) { // conn assignment worked, need to close
@@ -283,28 +286,23 @@ async function getContentData(req, res, pool) {
     }
     }
 }
+
 async function editContentData(req, res, pool) {
     
     let conn;
     try {
         conn = await pool.getConnection();
         let data = req.body;
-        console.log(data);
         let result; 
         result = await conn.execute(
             `update content 
             set title = :title, releaseDate = :releaseDate, runtime = :runtime, 
             tagline = :tagline, voteAvg = :voteAvg, voteCount = :voteCount, 
-            popularity = :popularity, image = :image, cover = :cover
+            popularity = :popularity, image = :image, cover = :cover, overview = :overview
             where id = :id`, [data.title, data.releaseDate, data.runtime, data.tagline
-            , data.voteAvg, data.voteCount, data.popularity, data.image, data.cover, data.content_id]
+            , data.voteAvg, data.voteCount, data.popularity, data.image, data.cover, data.overview, data.content_id]
         )
         if(data.type === 'movie'){
-            result = await conn.execute(
-                `update movies
-                set overview = :overview
-                where id = :id`, [data.movie.overview, data.content_id]
-            )
             result = await conn.execute(
                 `update box_office
                 set budget = :budget, revenue = :revenue
@@ -350,3 +348,5 @@ async function deleteContentData(req, res, pool) {
     }
     }
 }
+
+

@@ -101,15 +101,32 @@ async function addPersonLink(req, res, pool) {
             data.member.NAME = titleCase(data.member.NAME);
             data.member.ROLE = titleCase(data.member.ROLE);
             result = await conn.execute(
-                `select name, role from crew_members where name = :name and role = :role`, [data.member.NAME, data.member.ROLE]
+                `select id from crew_members where name = :name and role = :role`, [data.member.NAME, data.member.ROLE]
             )
+            let id;
             if(result.rows.length === 0){
+                
                 result = await conn.execute(
-                    `insert into crew_members values (:name, :role)`, [data.member.NAME, data.member.ROLE]
-                )     
+                    `select max(id) from crew_members`
+                )
+    
+                if(result.rows[0][0] === null){
+                    id = 1;
+                }
+                else{
+                    id = result.rows[0][0] + 1;
+                }
+
+                result = await conn.execute(
+                    `insert into crew_members values (:id, :name, :role)`, [id, data.member.NAME, data.member.ROLE]
+                ) 
+
+            }
+            else{
+                id = result.rows[0][0]
             }
             result = await conn.execute(
-                `insert into credits values (:contentid, :name, :role)`, [data.content_id, data.member.NAME, data.member.ROLE]
+                `insert into credits values (:contentid, :id)`, [data.content_id, id]
             )
 
         }
@@ -142,9 +159,12 @@ async function removePersonLink(req, res, pool) {
 
         else if (data.type === 'Crew Members'){
             result = await conn.execute(
+                `select id from crew_members where name = :name and role = :role`, [data.member.NAME, data.member.ROLE]
+            )
+            result = await conn.execute(
                 `delete from Credits
-                where content_id = :content_id and crew_members_name = :name and crew_members_role = :role`, 
-                [data.content_id, data.member.NAME, data.member.ROLE]
+                where content_id = :content_id and crew_members_id =`, 
+                [data.content_id, id]
             )    
         }
         
@@ -267,3 +287,4 @@ async function removeCelebrityPicture(req, res, pool) {
         }
     }
 }
+
