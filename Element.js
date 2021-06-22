@@ -25,7 +25,10 @@ async function addElement(req, res, pool) {
     
     let conn;
     const data = req.body;
-    data["value"] = titleCase(data.value);
+    if(data.type !== 'Pictures'){
+        data["value"] = titleCase(data.value);
+    }
+
     try {
         conn = await pool.getConnection();
         let result; 
@@ -39,7 +42,7 @@ async function addElement(req, res, pool) {
                     result = await conn.execute(
                         `select max(id) from genres` 
                     )
-                    if(result.rows.length === 0){
+                    if(result.rows[0][0] === null){
                         id = 1;
                     }
                     else{
@@ -54,7 +57,7 @@ async function addElement(req, res, pool) {
                 else{
                     id = result.rows[0][0];
                 }
-                console.log(id);
+
                 result = await conn.execute(
                     `insert into content_genres values (:contentid, :genreid)`
                     ,[data.content_id, id]
@@ -70,7 +73,7 @@ async function addElement(req, res, pool) {
                     result = await conn.execute(
                         `select max(id) from languages` 
                     )
-                    if(result.rows.length === 0){
+                    if(result.rows[0][0] === null){
                         id = 1;
                     }
                     else{
@@ -103,7 +106,7 @@ async function addElement(req, res, pool) {
                     result = await conn.execute(
                         `select max(id) from locations` 
                     )
-                    if(result.rows.length === 0){
+                    if(result.rows[0][0] === null){
                         id = 1;
                     }
                     else{
@@ -137,7 +140,7 @@ async function addElement(req, res, pool) {
                 result = await conn.execute(
                     `select max(id) from production_co` 
                 )
-                if(result.rows.length === 0){
+                if(result.rows[0][0] === null){
                     id = 1;
                 }
                 else{
@@ -167,7 +170,7 @@ async function addElement(req, res, pool) {
                 result = await conn.execute(
                     `select max(id) from plot_keywords` 
                 )
-                if(result.rows.length === 0){
+                if(result.rows[0][0] === null){
                     id = 1;
                 }
                 else{
@@ -205,7 +208,6 @@ async function addElement(req, res, pool) {
                     `insert into tv_pics values (:link, :tv_id)`, [data.value, data.content_id]
                 )
             }
-            console.log(result);
             break;
 
         }
@@ -226,7 +228,15 @@ async function removeElement(req, res, pool) {
     let conn;
     let id;
     const data = req.body;
-    data["value"] = titleCase(data.value);
+    let value;
+    if(data.type === 'Pictures'){
+        value = data.object.LINK;
+    }
+    else{
+        value = titleCase(data.object.NAME);
+    }
+    data.value = value;
+
     try {
         conn = await pool.getConnection();
         let result; 
@@ -244,6 +254,7 @@ async function removeElement(req, res, pool) {
 
     //--------------------------------------------------------------------------------------------
             case 'Languages':
+                
                 result = await conn.execute(
                     `select id from languages where name = :name`, [data.value]
                 )
@@ -251,6 +262,7 @@ async function removeElement(req, res, pool) {
                 result = await conn.execute(
                     `delete from spoken_languages where content_id = :contentid and languages_id = :languageid`, [data.content_id, id]
                 )
+                break;
 
         //--------------------------------------------------------------------------------------------
             case 'Filming Locations':
@@ -302,7 +314,7 @@ async function removeElement(req, res, pool) {
                 
                 if(content_type === 'movie'){
                     result = await conn.execute(
-                        `delete from movie_pics where link = :link and movies_movie_id = :movieid`, [data.value, data.content_id]
+                        `delete from movie_pics where link = :link and movies_movieid = :movieid`, [data.value, data.content_id]
                     )
                 }
                 else{

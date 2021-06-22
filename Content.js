@@ -120,6 +120,7 @@ async function search(req, res, pool) {
     const data = req.body;
     try {
         conn = await pool.getConnection(); 
+        let result;
         if(data.from  === 'AwardsNews'){
             result = await conn.execute(
             `SELECT *
@@ -138,6 +139,15 @@ async function search(req, res, pool) {
                 and ROWNUM <= 5`, [data.match.toLowerCase()+'%']
                 , { outFormat: oracledb.OUT_FORMAT_OBJECT }
                 )            
+        }
+        else if(data.from === 'Cast Members'){
+            result = await conn.execute(
+                `select id, name
+                from celebrities
+                where lower(name) LIKE :match
+                and ROWNUM <= 5`, [data.match.toLowerCase()+'%']
+                , { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            )
         }
         
         res.status(200).json(result.rows); 
@@ -216,9 +226,33 @@ async function getContentDetails(req, res, pool) {
             `select name, role
             from credits, crew_members      
             where crew_members_id = id and content_id = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
-        )
-        
+        )  
         content_data.crew = result.rows;
+
+        if(result.rows[0][0] === 'tvshow'){
+            result = await conn.execute(
+                `select name, gender from creators, created_by
+                where creators_id = id and tv_shows_id = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            )
+            content_data.creators = result.rows;
+            
+            result = await conn.execute(
+                `select * from seasons where tv_shows_tvid = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            )
+            result = await conn.execute(
+                 `select link from tv_pics where tv_shows_tvid = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            )
+            
+            content_data.pictures = result.rows;
+         }
+         else{
+             result = await conn.execute(
+                 `select link from movie_pics where movies_movieid = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            )
+            content_data.pictures = result.rows;
+         }
+
+
         res.status(200).json(content_data); 
 
     } catch (err) {
@@ -348,5 +382,4 @@ async function deleteContentData(req, res, pool) {
     }
     }
 }
-
 

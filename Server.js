@@ -93,6 +93,7 @@ async function init() {
     app.post('/deleteNews', (req, res) => AwardNews.deleteNews(req, res, pool));
     app.post('/getAwardEvent', (req, res) => AwardNews.getAwardEvent(req, res, pool));
     app.post('/getNews', (req, res) => AwardNews.getNews(req, res, pool));
+
     
   const httpPort = 4000;
     app.listen(httpPort);
