@@ -7,7 +7,8 @@ module.exports = {
     editNews,
     deleteNews,
     getNews,
-    getAwardEvent
+    getAwardEvent,
+    getNewsAwardsEvents
 } 
 
 
@@ -250,6 +251,36 @@ async function getAwardEvent(req, res, pool) {
             result.rows[0].content = contentdata.rows[0];
             res.status(200).json(result.rows[0]);
         }
+
+    } catch (err) {
+        res.status(400).json('error fetching news data');
+    console.log('Ouch!', err)
+    } finally {
+    if (conn) { // conn assignment worked, need to close
+        await conn.close()
+    }
+    }
+}
+
+async function getNewsAwardsEvents(req, res, pool) {
+    
+    let conn;
+    const {filter, type} = req.body;
+    console.log(req.body);
+    try {
+        conn = await pool.getConnection();
+        let result;
+        
+        if(filter === 'news'){
+            result = await conn.execute(
+                `select news.*
+                from news, content
+                where news.content_id = content.id and content.type = :type`, [type], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            )
+
+        }
+
+        res.status(200).json(result.rows);
 
     } catch (err) {
         res.status(400).json('error fetching news data');

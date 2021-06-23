@@ -6,7 +6,8 @@ module.exports = {
     getContentDetails,
     getContentData,
     editContentData,
-    deleteContentData
+    deleteContentData,
+    filterContent
 } 
 
 
@@ -217,7 +218,8 @@ async function getContentDetails(req, res, pool) {
         result = await conn.execute(
             `select celebrities_id, celebrities.name, order_no, character
             from cast, celebrities
-            where celebrities_id = celebrities.id and content_id = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            where celebrities_id = celebrities.id and content_id = :id
+            order by order_no asc`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
         )
         
         content_data.cast = result.rows;
@@ -229,6 +231,9 @@ async function getContentDetails(req, res, pool) {
         )  
         content_data.crew = result.rows;
 
+        result = await conn.execute(
+            `select type from content where id = :id`, [id]
+        )
         if(result.rows[0][0] === 'tvshow'){
             result = await conn.execute(
                 `select name, gender from creators, created_by
@@ -237,8 +242,11 @@ async function getContentDetails(req, res, pool) {
             content_data.creators = result.rows;
             
             result = await conn.execute(
-                `select * from seasons where tv_shows_tvid = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                `select * from seasons where tv_shows_tvid = :id 
+                order by season_no asc`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
             )
+            content_data.seasons = result.rows;
+
             result = await conn.execute(
                  `select link from tv_pics where tv_shows_tvid = :id`, [id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
             )
@@ -322,7 +330,6 @@ async function getContentData(req, res, pool) {
 }
 
 async function editContentData(req, res, pool) {
-    
     let conn;
     try {
         conn = await pool.getConnection();
@@ -383,3 +390,71 @@ async function deleteContentData(req, res, pool) {
     }
 }
 
+async function filterContent(req, res, pool) {
+    
+    let conn;
+    const {filter, type} = req.body;
+    let total_rows = 20;
+    try {
+        conn = await pool.getConnection();
+        let result;
+        switch(filter){
+            case 'popularity':
+
+                result = await conn.execute(
+                    `select content.*
+                    from (select content.*, row_number() over (order by popularity desc) as total_rows
+                          from content where type = :type
+                         ) content
+                    where total_rows <= :total_rows`, [type, total_rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+
+                break;
+            
+            case 'rating':
+                result = await conn.execute(
+                    `select content.*
+                    from (select content.*, row_number() over (order by voteavg desc) as total_rows
+                          from content where type = :type
+                         ) content
+                    where total_rows <= :total_rows`, [type, total_rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+
+                break;
+            
+            case 'releasedate':
+                result = await conn.execute(
+                    `select content.*
+                    from (select content.*, row_number() over (order by releaseDate desc) as total_rows
+                          from content where type = :type
+                         ) content
+                    where total_rows <= :total_rows`, [type, total_rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+                break;
+
+            case 'boxoffice':
+                result = await conn.execute(
+                    `select content.*, revenue
+                    from (select box_office.movies_movieid as movieid, box_office.revenue, row_number() over (order by revenue desc) as total_rows
+                          from box_office
+                         ) , content
+                    where content.id = movieid and total_rows <= :total_rows`, [total_rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+      
+                break;
+
+                
+        }
+        
+        res.status(200).json(result.rows);
+
+
+    } catch (err) {
+        res.status(400).json('error getting content data');
+        console.log(err);
+    } finally {
+    if (conn) { // conn assignment worked, need to close
+        await conn.close()
+    }
+    }
+}
