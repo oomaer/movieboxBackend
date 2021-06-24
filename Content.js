@@ -393,20 +393,18 @@ async function deleteContentData(req, res, pool) {
 async function filterContent(req, res, pool) {
     
     let conn;
-    const {filter, type} = req.body;
-    let total_rows = 20;
+    const {filter, type, rows} = req.body;
     try {
         conn = await pool.getConnection();
         let result;
         switch(filter){
             case 'popularity':
-
                 result = await conn.execute(
                     `select content.*
                     from (select content.*, row_number() over (order by popularity desc) as total_rows
-                          from content where type = :type
+                          from content where type = :type and popularity is not null
                          ) content
-                    where total_rows <= :total_rows`, [type, total_rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                    where total_rows <= :total_rows`, [type, rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
                 )
 
                 break;
@@ -415,9 +413,9 @@ async function filterContent(req, res, pool) {
                 result = await conn.execute(
                     `select content.*
                     from (select content.*, row_number() over (order by voteavg desc) as total_rows
-                          from content where type = :type
+                          from content where type = :type and voteavg is not null
                          ) content
-                    where total_rows <= :total_rows`, [type, total_rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                    where total_rows <= :total_rows`, [type, rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
                 )
 
                 break;
@@ -428,7 +426,7 @@ async function filterContent(req, res, pool) {
                     from (select content.*, row_number() over (order by releaseDate desc) as total_rows
                           from content where type = :type
                          ) content
-                    where total_rows <= :total_rows`, [type, total_rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                    where total_rows <= :total_rows`, [type, rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
                 )
                 break;
 
@@ -438,7 +436,7 @@ async function filterContent(req, res, pool) {
                     from (select box_office.movies_movieid as movieid, box_office.revenue, row_number() over (order by revenue desc) as total_rows
                           from box_office
                          ) , content
-                    where content.id = movieid and total_rows <= :total_rows`, [total_rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                    where content.id = movieid and total_rows <= :total_rows`, [rows], {outFormat: oracledb.OUT_FORMAT_OBJECT}
                 )
       
                 break;

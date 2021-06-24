@@ -8,7 +8,8 @@ module.exports = {
     editCelebrity,
     addCelebrityPicture,
     removeCelebrityPicture,
-    getCelebrity
+    getCelebrity,
+    filterCelebrity
 }
 const titleCase = (str) => {
     var splitStr = str.toLowerCase().split(' ');
@@ -218,7 +219,7 @@ async function getCelebrity(req, res, pool) {
         )
         
         let pictures = await conn.execute(
-            `select link as NAME from celeb_pics where celebrities_id = :id`, [data.id], {outFormat: OracleDB.OUT_FORMAT_OBJECT}
+            `select link from celeb_pics where celebrities_id = :id`, [data.id], {outFormat: OracleDB.OUT_FORMAT_OBJECT}
         )
 
         if(result.rows.length === 0){
@@ -243,7 +244,6 @@ async function addCelebrityPicture(req, res, pool) {
     
     let conn;
     const data = req.body;
-    data["value"] = titleCase(data.value);
     try {       
         conn = await pool.getConnection();
         let result; 
@@ -267,7 +267,6 @@ async function addCelebrityPicture(req, res, pool) {
 async function removeCelebrityPicture(req, res, pool) {
     let conn;
     const data = req.body;
-    data["value"] = titleCase(data.value);
     try {
         conn = await pool.getConnection();
         let result; 
@@ -275,7 +274,7 @@ async function removeCelebrityPicture(req, res, pool) {
             `delete from celeb_pics where link = :link and celebrities_id = :celebid`, [data.value, data.celeb_id]
         )
 
-    
+        console.log(result);
         res.status(200).json('successfully removed link');
 
     } catch (err) {
@@ -288,3 +287,59 @@ async function removeCelebrityPicture(req, res, pool) {
     }
 }
 
+async function filterCelebrity(req, res, pool) {
+    
+    let conn;
+    const {filter} = req.body;
+    let total_rows = 20;
+    try {
+        conn = await pool.getConnection();
+        let result;
+        switch(filter){
+            case 'popularity':
+                result = await conn.execute(
+                    `select celebrities.*
+                    from (select celebrities.*, row_number() over (order by popularity desc) as total_rows
+                          from celebrities where popularity is not null
+                         ) celebrities
+                    where total_rows <= :total_rows`, [total_rows], {outFormat: OracleDB.OUT_FORMAT_OBJECT}
+                )
+
+                break;
+            
+            case 'born':
+                let today = new Date();
+                let year = today.getFullYear();
+                let month = today.getMonth() + 1;
+                if(month < 10){
+                    month = '0' + month
+                } 
+                let day = today.getDate();
+                if(day < 10){
+                    day = '0' + day;
+                }
+                datetoday = `${year}-${month}-${day}`;
+                
+                result = await conn.execute(
+                    `select * from celebrities
+                    where BIRTHDATE = :datetoday
+                    `, [datetoday], {outFormat: OracleDB.OUT_FORMAT_OBJECT}
+                )
+
+                break;        
+
+                
+        }
+        
+        res.status(200).json(result.rows);
+
+
+    } catch (err) {
+        res.status(400).json('error getting content data');
+        console.log(err);
+    } finally {
+    if (conn) { // conn assignment worked, need to close
+        await conn.close()
+    }
+    }
+}

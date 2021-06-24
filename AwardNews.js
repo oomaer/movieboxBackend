@@ -1,3 +1,4 @@
+const { outFormat } = require('oracledb');
 const oracledb = require('oracledb');
 module.exports = {
     addAwardEvent,
@@ -266,17 +267,40 @@ async function getNewsAwardsEvents(req, res, pool) {
     
     let conn;
     const {filter, type} = req.body;
-    console.log(req.body);
     try {
         conn = await pool.getConnection();
         let result;
-        
-        if(filter === 'news'){
-            result = await conn.execute(
-                `select news.*
-                from news, content
-                where news.content_id = content.id and content.type = :type`, [type], {outFormat: oracledb.OUT_FORMAT_OBJECT}
-            )
+        if(type === 'latest'){
+            if(filter === 'news'){
+                result = await conn.execute(
+                    `select news.*
+                    from news where publishDate is not null
+                    order by publishDate desc`, [],
+                     {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+            }
+            else if(filter === 'awardsevents'){
+                result = await conn.execute(
+                    `select * from awards_events
+                    order by year desc`, [], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+            }
+
+        }
+
+        else if(filter === 'news'){
+            if (type === 'popular'){
+                result = await conn.execute(
+                    `select * from news order by popularity desc`, [], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+            }
+            else{
+                result = await conn.execute(
+                    `select news.*
+                    from news, content
+                    where news.content_id = content.id and content.type = :type`, [type], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+                )
+            }
 
         }
 
