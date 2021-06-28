@@ -150,7 +150,33 @@ async function search(req, res, pool) {
                 , { outFormat: oracledb.OUT_FORMAT_OBJECT }
             )
         }
-        
+        else if(data.from === 'Celebrities'){
+            result = await conn.execute(
+                `select *
+                from celebrities
+                where lower(name) LIKE :match
+                and ROWNUM <= 5`, [data.match.toLowerCase()+'%']
+                , { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            )
+        }
+        else if(data.from === 'Movies'){
+            result = await conn.execute(
+                `SELECT *
+                from  content
+                WHERE lower(title) LIKE :match and type = 'movie'
+                and ROWNUM <= 5`, [data.match.toLowerCase()+'%']
+                , { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            )
+        }
+        else if(data.from === 'TV Shows'){
+            result = await conn.execute(
+                `SELECT *
+                from  content
+                WHERE lower(title) LIKE :match and type = 'tvshow'
+                and ROWNUM <= 5`, [data.match.toLowerCase()+'%']
+                , { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            )
+        }
         res.status(200).json(result.rows); 
 
     } catch (err) {
