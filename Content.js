@@ -72,8 +72,8 @@ async function addContent(req, res, pool) {
         }
 
         result = await conn.execute(
-            `insert into content values (:id, :title, :releasedate, :runtime, :tagline, :voteavg, :votecount, :popularity, :image, :cover, :type ,:overview)`,
-            [id, data.title, data.releaseDate, data.runtime, data.tagline, data.voteAvg, data.voteCount, data.popularity, data.image, data.cover, data.type, data.overview]
+            `insert into content values (:id, :title, :releasedate, :runtime, :tagline, :voteavg, :votecount, :popularity, :image, :cover, :type ,:overview, :trailer)`,
+            [id, data.title, data.releaseDate, data.runtime, data.tagline, data.voteAvg, data.voteCount, data.popularity, data.image, data.cover, data.type, data.overview, data.trailer]
         );
         
 
@@ -370,9 +370,9 @@ async function editContentData(req, res, pool) {
             `update content 
             set title = :title, releaseDate = :releaseDate, runtime = :runtime, 
             tagline = :tagline, voteAvg = :voteAvg, voteCount = :voteCount, 
-            popularity = :popularity, image = :image, cover = :cover, overview = :overview
+            popularity = :popularity, image = :image, cover = :cover, overview = :overview, trailer = :trailer
             where id = :id`, [data.title, data.releaseDate, data.runtime, data.tagline
-            , data.voteAvg, data.voteCount, data.popularity, data.image, data.cover, data.overview, data.content_id]
+            , data.voteAvg, data.voteCount, data.popularity, data.image, data.cover, data.overview, data.trailer, data.content_id]
         )
         if(data.type === 'movie'){
             result = await conn.execute(
