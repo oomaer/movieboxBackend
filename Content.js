@@ -1,4 +1,5 @@
 const oracledb = require('oracledb');
+
 module.exports = {
     getRecommended,
     addContent,
@@ -7,7 +8,11 @@ module.exports = {
     getContentData,
     editContentData,
     deleteContentData,
-    filterContent
+    filterContent,
+    getContentReviews,
+    addContentReview,
+    editContentReview,
+    deleteContentReview
 } 
 
 
@@ -475,6 +480,140 @@ async function filterContent(req, res, pool) {
 
     } catch (err) {
         res.status(400).json('error getting content data');
+        console.log(err);
+    } finally {
+    if (conn) { // conn assignment worked, need to close
+        await conn.close()
+    }
+    }
+}
+async function getContentReviews(req, res, pool) {
+    
+    let conn;
+    let data = req.body;
+    let response = {};
+    try {
+        conn = await pool.getConnection();
+        let result;
+        if(data.user_email === ''){
+            result = await conn.execute(
+                `select name, rating, review_date, discription
+                from reviews, users
+                where users.email = user_email and content_id = :content_id`
+                ,[data.content_id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            )
+            response.reviews = result.rows;
+        }
+        else{
+            result = await conn.execute(
+                `select name, rating, review_date, discription
+                from reviews, users
+                where users.email = user_email and content_id = :content_id and user_email != :email`
+                ,[data.content_id, data.user_email], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            )
+            response.reviews = result.rows;
+
+            result = await conn.execute(
+                `select *
+                from reviews
+                where user_email = :user_email and content_id = :content_id`
+                ,[data.user_email, data.content_id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+            )
+            response.user_review = result.rows[0];
+        }
+
+        result = await conn.execute(
+            `select *
+            from content where id = :id`, [data.content_id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+        )
+        response.content = result.rows[0];
+        res.status(200).json(response);
+
+    } catch (err) {
+        res.status(400).json('error getting content data');
+        console.log(err);
+    } finally {
+    if (conn) { // conn assignment worked, need to close
+        await conn.close()
+    }
+    }
+}
+async function addContentReview(req, res, pool) {
+    
+    let conn;
+    let data = req.body;
+    try {
+        conn = await pool.getConnection();
+        let result;
+        result = await conn.execute(
+            `select max(id) from reviews`
+        )
+        let id;
+        if(result.rows[0][0] === null){
+            id = 1;
+        }
+        else{
+            id = result.rows[0][0] + 1;
+        }
+
+        result = await conn.execute(
+            `insert into reviews values 
+            (:id, :rating, :discription, :review_date, :user_email, :content_id)`
+            ,[id, data.rating, data.discription, data.date, data.user_email, data.content_id]
+        )
+    
+        res.status(200).json('added successfully');
+
+    } catch (err) {
+        res.status(400).json('error getting reviews data');
+        console.log(err);
+    } finally {
+    if (conn) { // conn assignment worked, need to close
+        await conn.close()
+    }
+    }
+}
+async function editContentReview(req, res, pool) {
+    
+    let conn;
+    let data = req.body;
+    try {
+        conn = await pool.getConnection();
+        let result;
+        result = await conn.execute(
+            `update reviews 
+            set rating = :rating, discription = :discription, review_date = :review_date
+            where content_id = :content_id and user_email = :user_email`
+            ,[data.rating, data.discription, data.date, data.content_id, data.user_email]
+        )
+
+        res.status(200).json('edited successfully');
+
+    } catch (err) {
+        res.status(400).json('error editing data');
+        console.log(err);
+    } finally {
+    if (conn) { // conn assignment worked, need to close
+        await conn.close()
+    }
+    }
+}
+async function deleteContentReview(req, res, pool) {
+    
+    let conn;
+    let data = req.body;
+    try {
+        conn = await pool.getConnection();
+        let result;
+        result = await conn.execute(
+            `delete from reviews where user_email = :user_email and content_id = :content_id`,
+            [data.user_email, data.content_id]
+        )
+    
+        res.status(200).json('deleted successfully');
+
+    } catch (err) {
+        res.status(400).json('error deleting data');
         console.log(err);
     } finally {
     if (conn) { // conn assignment worked, need to close

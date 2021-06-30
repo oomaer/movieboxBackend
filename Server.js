@@ -96,6 +96,10 @@ async function init() {
     app.post('/filterContent', (req, res) => Content.filterContent(req, res, pool));
     app.post('/filterCelebrity', (req, res) => Person.filterCelebrity(req, res, pool));
     app.post('/getNewsAwardsEvents', (req, res) => AwardNews.getNewsAwardsEvents(req, res, pool));
+    app.post('/getContentReviews', (req, res) => Content.getContentReviews(req, res, pool));
+    app.post('/addContentReview', (req, res) => Content.addContentReview(req, res, pool));
+    app.post('/editContentReview', (req, res) => Content.editContentReview(req, res, pool));
+    app.post('/deleteContentReview', (req, res) => Content.deleteContentReview(req, res, pool));
 
     
   const httpPort = 4000;
