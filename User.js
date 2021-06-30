@@ -57,7 +57,14 @@ async function signInUser(req, res, pool) {
     else{
         bcrypt.compare(data.password, result.rows[0][2], function(err, valid) {
             if(valid){
-                res.json({name: result.rows[0][0], email: result.rows[0][1]});
+                let admin;
+                if(result.rows[0][1].split('@')[2] === 'admin.db'){
+                    admin = true;
+                }
+                else{
+                    admin = false;
+                }
+                res.json({name: result.rows[0][0], email: result.rows[0][1], admin: admin});
             }
             else{
                 res.status(401).json("wrong password");
