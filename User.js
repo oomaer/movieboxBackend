@@ -58,7 +58,8 @@ async function signInUser(req, res, pool) {
         bcrypt.compare(data.password, result.rows[0][2], function(err, valid) {
             if(valid){
                 let admin;
-                if(result.rows[0][1].split('@')[2] === 'admin.db'){
+                if(result.rows[0][1].split('@')[1] === 'admin.db'){
+                    console.log('here');
                     admin = true;
                 }
                 else{
