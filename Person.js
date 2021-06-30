@@ -304,34 +304,38 @@ async function filterCelebrity(req, res, pool) {
                          ) celebrities
                     where total_rows <= :total_rows`, [total_rows], {outFormat: OracleDB.OUT_FORMAT_OBJECT}
                 )
-
+                res.status(200).json(result.rows);
                 break;
             
             case 'born':
+                let response = [];
                 let today = new Date();
-                let year = today.getFullYear();
                 let month = today.getMonth() + 1;
                 if(month < 10){
                     month = '0' + month
                 } 
+                month = ''+month;
                 let day = today.getDate();
                 if(day < 10){
                     day = '0' + day;
-                }
-                datetoday = `${year}-${month}-${day}`;
-                
+                }        
+                day = ''+day;      
                 result = await conn.execute(
                     `select * from celebrities
-                    where BIRTHDATE = :datetoday
-                    `, [datetoday], {outFormat: OracleDB.OUT_FORMAT_OBJECT}
+                    `, [], {outFormat: OracleDB.OUT_FORMAT_OBJECT}
                 )
 
+                for(let i = 0; i < result.rows.length; i++){
+                    if(result.rows[i].BIRTHDATE.split('-')[1] === month && result.rows[i].BIRTHDATE.split('-')[2] === day){   
+                        response.push(result.rows[i]);
+                    }
+                }
+                res.status(200).json(response);
                 break;        
 
                 
         }
         
-        res.status(200).json(result.rows);
 
 
     } catch (err) {

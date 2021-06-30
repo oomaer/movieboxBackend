@@ -562,6 +562,24 @@ async function addContentReview(req, res, pool) {
             ,[id, data.rating, data.discription, data.date, data.user_email, data.content_id]
         )
     
+        //updating content average votes and vote count
+        result = await conn.execute(
+            `select voteAvg, voteCount from content
+            where id = :id`, [data.content_id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+        )
+        let voteAvg = result.rows[0].VOTEAVG;
+        let voteCount = result.rows[0].VOTECOUNT;
+     
+        voteAvg = ((voteAvg * voteCount) + parseInt(data.rating)) / (voteCount+1);
+        voteCount++;
+
+        result = await conn.execute(
+            `update content
+            set voteAvg = :voteavg, votecount = :votecount
+            where id = :id`
+            ,[voteAvg, voteCount, data.content_id]
+        )
+
         res.status(200).json('added successfully');
 
     } catch (err) {
@@ -580,11 +598,42 @@ async function editContentReview(req, res, pool) {
     try {
         conn = await pool.getConnection();
         let result;
+        //getting previous rating of that user
+        result = await conn.execute(
+            `select rating from reviews where user_email = :email and content_id = :id`,[data.user_email, data.content_id]
+        )
+        let prevRating = result.rows[0][0];
+
         result = await conn.execute(
             `update reviews 
             set rating = :rating, discription = :discription, review_date = :review_date
             where content_id = :content_id and user_email = :user_email`
             ,[data.rating, data.discription, data.date, data.content_id, data.user_email]
+        )
+
+                //updating content average votes and vote count
+        result = await conn.execute(
+            `select voteAvg, voteCount from content
+            where id = :id`, [data.content_id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+        )
+        let voteAvg = result.rows[0].VOTEAVG;
+        let voteCount = result.rows[0].VOTECOUNT;
+        
+        if(voteCount === 1){
+            voteAvg = data.rating;
+        }
+        else{
+           //deleting old rating
+            voteAvg = ((voteAvg * voteCount) - prevRating) / (voteCount - 1)
+            //adding new rating
+            voteAvg = ((voteAvg * (voteCount-1)) + parseInt(data.rating)) / (voteCount);
+        }
+
+        result = await conn.execute(
+            `update content
+            set voteAvg = :voteavg
+            where id = :id`
+            ,[voteAvg, data.content_id]
         )
 
         res.status(200).json('edited successfully');
@@ -610,6 +659,29 @@ async function deleteContentReview(req, res, pool) {
             [data.user_email, data.content_id]
         )
     
+        //updating content average votes and vote count
+        result = await conn.execute(
+            `select voteAvg, voteCount from content
+            where id = :id`, [data.content_id], {outFormat: oracledb.OUT_FORMAT_OBJECT}
+        )
+        let voteAvg = result.rows[0].VOTEAVG;
+        let voteCount = result.rows[0].VOTECOUNT;
+        
+        if(voteCount === 1){
+            voteAvg = 0;
+        }
+        else{
+            voteAvg = ((voteAvg * voteCount) - parseInt(data.rating)) / (voteCount - 1)
+        }
+        voteCount--;
+
+        result = await conn.execute(
+            `update content
+            set voteAvg = :voteavg, votecount = :votecount
+            where id = :id`
+            ,[voteAvg, voteCount, data.content_id]
+        )
+
         res.status(200).json('deleted successfully');
 
     } catch (err) {
